@@ -23,10 +23,11 @@ public class WebSocketService: WebSocketDelegate {
     private let webSocketSubscriptionQueue = WebSocketSubscriptionQueue()
     /// 订阅的主题回调处理
     private let topicSubjects = [String: PassthroughSubject<[String: Any], Never>]().withLock()
-    private let reconnectDelay: TimeInterval = 5
     /// 连接状态
     private var isConnected = false
     private var reconnectAttempts = 0
+    
+    private var isReconnecting = false
     
     /// 增加连接状态发布接口（Combine）方便 UI 或管理组件监听连接状态：
     public var connectionStatus = CurrentValueSubject<Bool, Never>(false)
@@ -124,42 +125,70 @@ public class WebSocketService: WebSocketDelegate {
             .eraseToAnyPublisher()
     }
     
+    
+    /// 如果连接失败多次触发 .disconnected，可能并发进入多个 attemptReconnect() 调用，导致多个 connect() 同时进行。✅：引入状态标识（isReconnecting）防止重入
+    private func attemptReconnect(reason: String, code: UInt16) {
+        guard !isReconnecting && reconnectAttempts < 5 else { return }
+        isReconnecting = true
+        reconnectAttempts += 1
+        
+        let reconnectDelay = min(pow(2.0, Double(reconnectAttempts)), 60) // 指数退避策略
+        DispatchQueue.main.asyncAfter(deadline: .now() + reconnectDelay) { [weak self] in
+            self?.isReconnecting = false
+            self?.connect()
+        }
+    }
+    
     // MARK: - WebSocketDelegate + 自动重连 + 心跳 + 响应处理
     public func didReceive(event: Starscream.WebSocketEvent, client: any Starscream.WebSocketClient) {
         switch event {
         case .connected:
-            chf_print(.info, "WebSocket connected")
-            isConnected = true
-            reconnectAttempts = 0
-            startHeartbeat()
-            resendAllSubscriptions()
-            connectionStatus.send(true)
+            handleConnectedEvent()
         case .disconnected(let reason, let code):
-            chf_print(.info, "WebSocket disconnected \(reason) === \(code)")
-            isConnected = false
-            connectionStatus.send(false)
-            stopHeartbeat()
-            attemptReconnect(reason: reason, code: code)
+            handleDisconnectedEvent(reason: reason, code: code)
         case .text(let text):
-            if let data = text.data(using: .utf8),
-               let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
-               let topic = json["topic"] as? String {
-                chf_print(.info, "WebSocket Received text: \(text)")
-                topicSubjects[topic]?.send(json)
-                WebSocketEventBus.shared.send(topic: topic, payload: json)
-            }
+            handleTextEvent(text: text)
         case .error(let error):
-            print("WebSocket error: \(error?.localizedDescription ?? "Unknown error")")
+            handleErrorEvent(error: error)
         default: break
         }
     }
     
-    private func attemptReconnect(reason: String, code: UInt16) {
-        guard reconnectAttempts < 5 else { return }
-        DispatchQueue.main.asyncAfter(deadline: .now() + reconnectDelay) { [weak self] in
-            self?.reconnectAttempts += 1
-            self?.connect()
+    /// 处理连接成功后的逻辑
+    private func handleConnectedEvent() {
+        chf_print(.info, "WebSocket connected")
+        isConnected = true
+        reconnectAttempts = 0
+        startHeartbeat()
+        resendAllSubscriptions()
+        connectionStatus.send(true)
+    }
+    
+    private func handleDisconnectedEvent(reason: String, code: UInt16) {
+        chf_print(.info, "WebSocket disconnected \(reason) === \(code)")
+        isConnected = false
+        connectionStatus.send(false)
+        stopHeartbeat()
+        attemptReconnect(reason: reason, code: code)
+    }
+    
+    private func handleTextEvent(text: String) {
+        if let data = text.data(using: .utf8),
+           let json = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any],
+           let topic = json["topic"] as? String {
+            chf_print(.info, "WebSocket Received text: \(text)")
+            DispatchQueue.main.async {
+                self.topicSubjects[topic]?.send(json)
+                WebSocketEventBus.shared.send(topic: topic, payload: json)
+            }
         }
+    }
+
+    private func handleErrorEvent(error: Error?) {
+        let errorMessage = error?.localizedDescription ?? "Unknown error"
+        chf_print(.error, "WebSocket error: \(errorMessage)")
+        // 可以根据错误类型进行更精细的处理
+        // 例如，某些错误可能不需要重连
     }
 }
 
@@ -178,7 +207,7 @@ extension WebSocketService {
     }
     
     private func sendPing() {
-        let heartbeatMessage = "{\"ping\": \(Int(Date().timeIntervalSince1970 * 1000))}"
+        let heartbeatMessage = webSocketServiceType.heartbeatMessage
         socket?.write(string: heartbeatMessage)
 //        chf_print(.info, heartbeatMessage)
     }

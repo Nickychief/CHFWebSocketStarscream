@@ -46,4 +46,8 @@ enum WebSocketServiceType: String {
             return 30
         }
     }
+    
+    var heartbeatMessage: String {
+        return "{\"ping\": \(self.identity)--\(Int(Date().timeIntervalSince1970 * 1000))}"
+    }
 }
