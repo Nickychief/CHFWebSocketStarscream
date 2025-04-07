@@ -1,5 +1,6 @@
 # CHFWebSocketStarscream
 
+<img width="541" alt="image" src="https://github.com/user-attachments/assets/aa090a4d-6ee6-423d-9c72-026f36d2b511" />
 // 核心模块设计
 WebSocketManager       // 管理多个服务连接
  ├─ WebSocketService   // 单个 WebSocket 实例
