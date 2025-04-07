@@ -2,7 +2,7 @@
 //  AppDelegate.swift
 //  CHFWebSocketStarscream
 //
-//  Created by 刘远明 on 9/14/23.
+//  Created by Nikcy on 9/14/23.
 //
 
 import UIKit

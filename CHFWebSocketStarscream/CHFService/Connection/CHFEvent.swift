@@ -2,7 +2,7 @@
 //  CHFEvent.swift
 //  CHFWebSocketStarscream
 //
-//  Created by 刘远明 on 2025/4/3.
+//  Created by Nikcy on 2025/4/3.
 //
 
 import UIKit

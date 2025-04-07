@@ -2,7 +2,7 @@
 //  WebSocketService.swift
 //  CHFWebSocketStarscream
 //
-//  Created by 刘远明 on 2025/4/7.
+//  Created by Nikcy on 2025/4/7.
 //
 
 import UIKit
@@ -17,7 +17,7 @@ public class WebSocketService: WebSocketDelegate {
     private var heartbeatTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     /// 未连接时进行订阅的暂缓队列
-    private let subscriptionQueue = SubscriptionQueue()
+    private let webSocketSubscriptionQueue = WebSocketSubscriptionQueue()
     private let topicSubjects = [String: PassthroughSubject<[String: Any], Never>]().withLock()
     private let reconnectDelay: TimeInterval = 5
     private var isConnected = false
@@ -57,12 +57,12 @@ public class WebSocketService: WebSocketDelegate {
         if isConnected {
             sendMessages(subscription, event)
         } else {
-            subscriptionQueue.add(subscription)
+            webSocketSubscriptionQueue.add(subscription)
         }
     }
     
     func cancelSubscription(_ subscription: WebSocketSubscription, _ event: String = "cancel") {
-        subscriptionQueue.cancel(subscription)
+        webSocketSubscriptionQueue.cancel(subscription)
         sendMessages(subscription, event)
     }
     
@@ -104,7 +104,7 @@ public class WebSocketService: WebSocketDelegate {
     }
     
     private func resendAllSubscriptions() {
-        for subscription in subscriptionQueue.all() {
+        for subscription in WebSocketSubscriptionQueue.all() {
             sendSubscription(subscription)
         }
     }

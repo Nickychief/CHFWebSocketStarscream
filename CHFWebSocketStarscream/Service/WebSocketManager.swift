@@ -5,7 +5,7 @@
 // 核心模块设计
 WebSocketManager       // 管理多个服务连接
  ├─ WebSocketService   // 单个 WebSocket 实例
-     ├─ SubscriptionQueue      // 缓存订阅消息
+     ├─ WebSocketSubscriptionQueue      // 缓存订阅消息
      ├─ HeartbeatScheduler     // 心跳管理
      └─ WebSocketEventBus      // 事件统一派发（Rx / Combine）
 **/

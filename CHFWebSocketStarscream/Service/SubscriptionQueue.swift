@@ -1,13 +1,13 @@
 //
-//  SubscriptionQueue.swift
+//  WebSocketSubscriptionQueue.swift
 //  CHFWebSocketStarscream
 //
-//  Created by 刘远明 on 2025/4/7.
+//  Created by Nikcy on 2025/4/7.
 //
 
 import UIKit
 
-final class SubscriptionQueue {
+final class WebSocketSubscriptionQueue {
     private var subscriptions: Set<WebSocketSubscription> = []
     private var priorityQueue: [WebSocketSubscription] = []
     private let queue = DispatchQueue(label: "subscription.queue")

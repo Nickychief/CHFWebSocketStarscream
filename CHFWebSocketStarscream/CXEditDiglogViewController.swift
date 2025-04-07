@@ -2,7 +2,7 @@
 //  CXEditDiglogViewController.swift
 //  Test
 //
-//  Created by 刘远明 on 8/6/23.
+//  Created by Nikcy on 8/6/23.
 //
 
 import UIKit

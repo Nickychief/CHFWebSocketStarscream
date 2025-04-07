@@ -2,7 +2,7 @@
 //  CHFReachability.swift
 //  ChiefMT
 //
-//  Created by 刘远明 on 2025/4/2.
+//  Created by Nikcy on 2025/4/2.
 //
 
 import UIKit
