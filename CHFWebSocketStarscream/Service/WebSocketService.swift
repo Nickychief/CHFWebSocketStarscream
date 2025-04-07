@@ -15,11 +15,17 @@ public class WebSocketService: WebSocketDelegate {
     private let url: String
     private var heartbeatTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
+    /// 未连接时进行订阅的暂缓队列
     private let subscriptionQueue = SubscriptionQueue()
     private let topicSubjects = [String: PassthroughSubject<[String: Any], Never>]().withLock()
     private let reconnectDelay: TimeInterval = 5
     private var isConnected = false
     private var reconnectAttempts = 0
+    
+    deinit {
+        disconnect()
+        chf_print(.info, "\(self) -- \(#function)")
+    }
 
     init(webSocketServiceType: WebSocketServiceType) {
         self.identifier = webSocketServiceType.identity
@@ -30,8 +36,8 @@ public class WebSocketService: WebSocketDelegate {
     private func setupSocket() {
         let request = URLRequest(url: URL(string: url)!)
         socket = WebSocket(request: request)
+        socket?.request.timeoutInterval = 10
         socket?.delegate = self
-        connect()
     }
 
     func connect() {
@@ -44,6 +50,7 @@ public class WebSocketService: WebSocketDelegate {
         isConnected = false
     }
 
+    // MARK: - 发送消息
     func sendSubscription(_ subscription: WebSocketSubscription, _ event: String = "sub") {
         if isConnected {
             sendMessages(subscription, event)
@@ -55,11 +62,6 @@ public class WebSocketService: WebSocketDelegate {
     func cancelSubscription(_ subscription: WebSocketSubscription, _ event: String = "cancel") {
         subscriptionQueue.cancel(subscription)
         sendMessages(subscription, event)
-    }
-    
-    func observeTopic(_ topic: String) -> AnyPublisher<[String: Any], Never> {
-        topicSubjects[topic, default: PassthroughSubject<[String: Any], Never>()]
-            .eraseToAnyPublisher()
     }
     
     private func sendMessages(_ subscription: WebSocketSubscription, _ event: String) {
@@ -81,6 +83,7 @@ public class WebSocketService: WebSocketDelegate {
         
         if let message = dictionaryToJsonString(dictionary: validJsonObject) {
             socket.write(string: message)
+            chf_print(.info, "WebSocket send text: \(message)")
         }
     }
     
@@ -90,11 +93,11 @@ public class WebSocketService: WebSocketDelegate {
             if let jsonString = String(data: jsonData, encoding: .utf8) {
                 return jsonString
             } else {
-                return nil // 转换失败
+                return nil
             }
         } catch {
-            print("Error converting dictionary to JSON: \(error)")
-            return nil // 编码失败
+            chf_print(.error, "Error converting dictionary to JSON: \(error)")
+            return nil
         }
     }
     
@@ -104,23 +107,10 @@ public class WebSocketService: WebSocketDelegate {
         }
     }
     
-    // MARK: - Heartbeat
-    private func startHeartbeat() {
-        stopHeartbeat()
-        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
-            self?.sendPing()
-        }
-    }
-    
-    private func stopHeartbeat() {
-        heartbeatTimer?.invalidate()
-        heartbeatTimer = nil
-    }
-    
-    private func sendPing() {
-        let heartbeatMessage = "{\"ping\": \(Int(Date().timeIntervalSince1970 * 1000))}"
-        socket?.write(string: heartbeatMessage)
-//        chf_print(.info, heartbeatMessage)
+    // WebSocketService内回调可供外部调用
+    public func observeTopic(_ topic: String) -> AnyPublisher<[String: Any], Never> {
+        topicSubjects[topic, default: PassthroughSubject<[String: Any], Never>()]
+            .eraseToAnyPublisher()
     }
     
     // MARK: - WebSocketDelegate
@@ -143,6 +133,7 @@ public class WebSocketService: WebSocketDelegate {
                let topic = json["topic"] as? String {
                 chf_print(.info, "WebSocket Received text: \(text)")
                 topicSubjects[topic]?.send(json)
+                WebSocketEventBus.shared.send(topic: topic, payload: json)
             }
         case .error(let error):
             print("WebSocket error: \(error?.localizedDescription ?? "Unknown error")")
@@ -156,6 +147,27 @@ public class WebSocketService: WebSocketDelegate {
             self?.reconnectAttempts += 1
             self?.connect()
         }
+    }
+}
+
+// MARK: - Heartbeat
+extension WebSocketService {
+    private func startHeartbeat() {
+        stopHeartbeat()
+        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+            self?.sendPing()
+        }
+    }
+    
+    private func stopHeartbeat() {
+        heartbeatTimer?.invalidate()
+        heartbeatTimer = nil
+    }
+    
+    private func sendPing() {
+        let heartbeatMessage = "{\"ping\": \(Int(Date().timeIntervalSince1970 * 1000))}"
+        socket?.write(string: heartbeatMessage)
+//        chf_print(.info, heartbeatMessage)
     }
 }
 

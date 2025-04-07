@@ -17,22 +17,24 @@ public class WebSocketManager {
     static let shared = WebSocketManager()
     private var services: [WebSocketServiceType: WebSocketService] = [:]
 
-    func registerService(webSocketServiceType: WebSocketServiceType) {
+    @discardableResult
+    func registerService(webSocketServiceType: WebSocketServiceType) -> WebSocketService? {
         if services[webSocketServiceType] == nil {
             let service = WebSocketService(webSocketServiceType: webSocketServiceType)
+            service.connect()
             services[webSocketServiceType] = service
+            return service
+        } else {
+            return services[webSocketServiceType]
         }
     }
     
     func unregisterService(webSocketServiceType: WebSocketServiceType) {
         if services.keys.contains(webSocketServiceType) {
+            services[webSocketServiceType]?.disconnect()
             services.removeValue(forKey: webSocketServiceType)
         }
     }
-
-//    func sendMessage(to webSocketServiceType: WebSocketServiceType, message: WebSocketSubscription) {
-//        services[webSocketServiceType]?.send(message)
-//    }
 
     func subscribe(to webSocketServiceType: WebSocketServiceType, subscription: WebSocketSubscription) {
         services[webSocketServiceType]?.sendSubscription(subscription)
@@ -43,6 +45,6 @@ public class WebSocketManager {
     }
 
     func observeTopic(_ topic: String) -> AnyPublisher<[String: Any], Never> {
-        return WebSocketEventBus.shared.publisher(for: topic).eraseToAnyPublisher()
+        return WebSocketEventBus.shared.publisher(for: topic)
     }
 }

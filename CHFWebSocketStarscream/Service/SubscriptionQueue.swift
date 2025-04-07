@@ -11,6 +11,10 @@ final class SubscriptionQueue {
     private var subscriptions: Set<WebSocketSubscription> = []
     private var priorityQueue: [WebSocketSubscription] = []
     private let queue = DispatchQueue(label: "subscription.queue")
+    
+    deinit {
+        chf_print(.info, "\(self) -- \(#function)")
+    }
 
     func add(_ subscription: WebSocketSubscription) {
         queue.sync {
