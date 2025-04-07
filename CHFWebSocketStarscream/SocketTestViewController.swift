@@ -45,9 +45,16 @@ class SocketTestViewController: UIViewController {
         
         // socket1的订阅
         WebSocketManager.shared.subscribe(to: .MarketService, subscription: WebSocketSubscription(topic: "depth", symbol: "301.700", timeMode: "0", payload: ["scale": "0.01"]))
+        WebSocketManager.shared.subscribe(to: .MarketService, subscription: WebSocketSubscription(topic: "trade", symbol: "700", timeMode: "0", payload: ["scale": "0.01"]))
+        WebSocketManager.shared.subscribe(to: .MarketService, subscription: WebSocketSubscription(topic: "realtime", symbol: "700", timeMode: "0", payload: ["scale": "0.01"]))
+        WebSocketManager.shared.subscribe(to: .MarketService, subscription: WebSocketSubscription(topic: "kline_1m", symbol: "700", timeMode: "0", payload: ["scale": "0.01"]))
+        
         
         // socket2的订阅
+        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "trade", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
         WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "order", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
+        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "extend_snap", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0", payload: ["needSnap": "1"]))
+        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "option_snapshot", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0", payload: ["needSnap": "1"]))
         WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "option_status", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
         
         // socket1和socket2的回调
@@ -55,7 +62,7 @@ class SocketTestViewController: UIViewController {
     }
     
     func startListeningToQuotation() {
-        WebSocketEventBus.shared.publisher(for: "depth")
+        WebSocketEventBus.shared.publisher(for: "trade")
             .sink { [weak self] receivedPayload in
                 // 在这里处理接收到的 "quotation" 事件的 payload
                 print("Received quotation payload: \(receivedPayload)")
