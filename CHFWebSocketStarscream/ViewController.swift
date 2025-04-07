@@ -62,6 +62,6 @@ class ViewController: UIViewController {
     }
     
     @objc func connect() {
-        self.navigationController?.pushViewController(TwoViewController(), animated: true)
+        self.navigationController?.pushViewController(SocketTestViewController(), animated: true)
     }
 }

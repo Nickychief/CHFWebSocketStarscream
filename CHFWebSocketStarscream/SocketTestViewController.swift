@@ -1,5 +1,5 @@
 //
-//  TwoViewController.swift
+//  SocketTestViewController.swift
 //  CHFWebSocketStarscream
 //
 //  Created by 刘远明 on 2025/4/7.
@@ -8,7 +8,7 @@
 import UIKit
 import Combine
 
-class TwoViewController: UIViewController {
+class SocketTestViewController: UIViewController {
     private var cancellables: Set<AnyCancellable> = []
     let textView = UITextView()
     
@@ -38,23 +38,23 @@ class TwoViewController: UIViewController {
             textView.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
         
+        // 创建socket1
         WebSocketService1 = WebSocketManager.shared.registerService(webSocketServiceType: .MarketService)
+        // 创建socket2
         WebSocketService2 = WebSocketManager.shared.registerService(webSocketServiceType: .USStockOptions)
         
+        // socket1的订阅
         WebSocketManager.shared.subscribe(to: .MarketService, subscription: WebSocketSubscription(topic: "depth", symbol: "301.700", timeMode: "0", payload: ["scale": "0.01"]))
-//        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "order", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
-//        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "option_status", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
         
+        // socket2的订阅
+        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "order", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
+        WebSocketManager.shared.subscribe(to: .USStockOptions, subscription: WebSocketSubscription(topic: "option_status", stock: "TSLA", symbol: "TSLA250328P00730000", timeMode: "0"))
+        
+        // socket1和socket2的回调
         startListeningToQuotation()
     }
     
     func startListeningToQuotation() {
-        // ✅ 调试所有订阅事件
-//        WebSocketEventBus.shared.
-//            .sink { payload in
-//                print("🔥 收到事件：\(payload)")
-//        } .store(in: &cancellables)
-        
         WebSocketEventBus.shared.publisher(for: "depth")
             .sink { [weak self] receivedPayload in
                 // 在这里处理接收到的 "quotation" 事件的 payload

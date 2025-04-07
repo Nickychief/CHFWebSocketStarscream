@@ -13,6 +13,7 @@ public class WebSocketService: WebSocketDelegate {
     private var socket: WebSocket?
     private let identifier: String
     private let url: String
+    private let webSocketServiceType: WebSocketServiceType
     private var heartbeatTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
     /// 未连接时进行订阅的暂缓队列
@@ -30,13 +31,14 @@ public class WebSocketService: WebSocketDelegate {
     init(webSocketServiceType: WebSocketServiceType) {
         self.identifier = webSocketServiceType.identity
         self.url = webSocketServiceType.host
+        self.webSocketServiceType = webSocketServiceType
         setupSocket()
     }
 
     private func setupSocket() {
         let request = URLRequest(url: URL(string: url)!)
         socket = WebSocket(request: request)
-        socket?.request.timeoutInterval = 10
+        socket?.request.timeoutInterval = webSocketServiceType.requestTimeoutInterval
         socket?.delegate = self
     }
 
@@ -154,7 +156,7 @@ public class WebSocketService: WebSocketDelegate {
 extension WebSocketService {
     private func startHeartbeat() {
         stopHeartbeat()
-        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { [weak self] _ in
+        heartbeatTimer = Timer.scheduledTimer(withTimeInterval: webSocketServiceType.heartbeatTimerInterval, repeats: true) { [weak self] _ in
             self?.sendPing()
         }
     }
