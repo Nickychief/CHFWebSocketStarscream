@@ -10,16 +10,21 @@ import Starscream
 import Combine
 
 public class WebSocketService: WebSocketDelegate {
-    private var socket: WebSocket?
     private let identifier: String
-    private let url: String
     private let webSocketServiceType: WebSocketServiceType
+    // 从webSocketServiceType获取请求超时时间
+    private var socket: WebSocket?
+    // 从webSocketServiceType获取url
+    private let url: String
+    /// 从webSocketServiceType获取定时间隔
     private var heartbeatTimer: Timer?
     private var cancellables = Set<AnyCancellable>()
-    /// 未连接时进行订阅的暂缓队列
+    /// 在连接未建立时临时保存订阅消息的一个队列
     private let webSocketSubscriptionQueue = WebSocketSubscriptionQueue()
+    /// 订阅的主题回调处理
     private let topicSubjects = [String: PassthroughSubject<[String: Any], Never>]().withLock()
     private let reconnectDelay: TimeInterval = 5
+    /// 连接状态
     private var isConnected = false
     private var reconnectAttempts = 0
     
@@ -104,7 +109,7 @@ public class WebSocketService: WebSocketDelegate {
     }
     
     private func resendAllSubscriptions() {
-        for subscription in WebSocketSubscriptionQueue.all() {
+        for subscription in webSocketSubscriptionQueue.all() {
             sendSubscription(subscription)
         }
     }
@@ -115,7 +120,7 @@ public class WebSocketService: WebSocketDelegate {
             .eraseToAnyPublisher()
     }
     
-    // MARK: - WebSocketDelegate
+    // MARK: - WebSocketDelegate + 自动重连 + 心跳 + 响应处理
     public func didReceive(event: Starscream.WebSocketEvent, client: any Starscream.WebSocketClient) {
         switch event {
         case .connected:
