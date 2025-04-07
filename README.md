@@ -1,4 +1,4 @@
-# CHFWebSocketStarscream
+# [CHFWebSocketStarscream](https://github.com/Nickychief/CHFWebSocketStarscream/wiki/How-to-use-it) 
 
 ```
 ┌────────────────────────┐
