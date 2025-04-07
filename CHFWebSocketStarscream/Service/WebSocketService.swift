@@ -28,6 +28,10 @@ public class WebSocketService: WebSocketDelegate {
     private var isConnected = false
     private var reconnectAttempts = 0
     
+    /// 增加连接状态发布接口（Combine）方便 UI 或管理组件监听连接状态：
+    public var connectionStatus = CurrentValueSubject<Bool, Never>(false)
+
+    
     deinit {
         disconnect()
         chf_print(.info, "\(self) -- \(#function)")
@@ -129,9 +133,11 @@ public class WebSocketService: WebSocketDelegate {
             reconnectAttempts = 0
             startHeartbeat()
             resendAllSubscriptions()
+            connectionStatus.send(true)
         case .disconnected(let reason, let code):
             chf_print(.info, "WebSocket disconnected \(reason) === \(code)")
             isConnected = false
+            connectionStatus.send(false)
             stopHeartbeat()
             attemptReconnect(reason: reason, code: code)
         case .text(let text):
