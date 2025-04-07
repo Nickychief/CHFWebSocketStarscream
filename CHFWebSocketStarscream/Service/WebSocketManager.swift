@@ -35,6 +35,13 @@ public class WebSocketManager {
             services.removeValue(forKey: webSocketServiceType)
         }
     }
+    
+    func unregisterServiceAll() {
+        if !services.isEmpty {
+            services.forEach({ $0.value.disconnect() })
+            services.removeAll()
+        }
+    }
 
     func subscribe(to webSocketServiceType: WebSocketServiceType, subscription: WebSocketSubscription) {
         services[webSocketServiceType]?.sendSubscription(subscription)

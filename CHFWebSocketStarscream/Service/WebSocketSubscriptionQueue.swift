@@ -21,6 +21,7 @@ final class WebSocketSubscriptionQueue {
             if !subscriptions.contains(subscription) {
                 subscriptions.insert(subscription)
                 priorityQueue.append(subscription)
+                priorityQueue.sort { $0.priority > $1.priority }
             }
         }
     }
