@@ -29,6 +29,7 @@ enum WebSocketServiceType: String {
         }
     }
     
+    /// 请求超时时间
     var requestTimeoutInterval: TimeInterval {
         switch self {
         case .MarketService:
@@ -38,6 +39,7 @@ enum WebSocketServiceType: String {
         }
     }
     
+    /// 心跳包消息间隔
     var heartbeatTimerInterval: TimeInterval {
         switch self {
         case .MarketService:
@@ -47,16 +49,28 @@ enum WebSocketServiceType: String {
         }
     }
     
+    /// 心跳包消息
     var heartbeatMessage: String {
         return "{\"ping\": \(self.identity)--\(Int(Date().timeIntervalSince1970 * 1000))}"
     }
     
+    /// 消息超时（服务器未响应）
     var messageTimeout: TimeInterval {
         switch self {
         case .MarketService:
             return 5
         case.USStockOptions:
             return 5
+        }
+    }
+    
+    /// 是否需要丢包重传机制（确认+重发）
+    var packetLossRetransmissionMechanism: Bool {
+        switch self {
+        case .MarketService:
+            return false
+        case.USStockOptions:
+            return false
         }
     }
 }

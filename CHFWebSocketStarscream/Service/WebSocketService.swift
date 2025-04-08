@@ -22,8 +22,6 @@ public class WebSocketService: WebSocketDelegate {
     private var cancellables = Set<AnyCancellable>()
     /// 在连接未建立时临时保存订阅消息的一个队列
     private let webSocketSubscriptionQueue = WebSocketSubscriptionQueue()
-    /// 超时检测字典
-    private var pendingMessages: [String: (message: String, timestamp: TimeInterval)] = [:]
     /// 订阅的主题回调处理
     private let topicSubjects = [String: PassthroughSubject<[String: Any], Never>]().withLock()
     /// 连接状态
@@ -31,6 +29,9 @@ public class WebSocketService: WebSocketDelegate {
     private var reconnectAttempts = 0
     
     private var isReconnecting = false
+    
+    /// 超时检测字典
+    private var pendingMessages: [String: (message: String, timestamp: TimeInterval)] = [:]
     
     // 网络监听
     private let pathMonitor = NWPathMonitor()
@@ -128,10 +129,12 @@ public class WebSocketService: WebSocketDelegate {
             socket.write(string: message)
             
             // 启动超时检测
-            let messageID = subscription.topic
-            pendingMessages[messageID] = (message, Date().timeIntervalSince1970)
-            DispatchQueue.main.asyncAfter(deadline: .now() + self.webSocketServiceType.messageTimeout) { [weak self] in
-                self?.checkMessageTimeout(id: messageID)
+            if webSocketServiceType.packetLossRetransmissionMechanism {
+                let messageID = subscription.topic
+                pendingMessages[messageID] = (message, Date().timeIntervalSince1970)
+                DispatchQueue.main.asyncAfter(deadline: .now() + self.webSocketServiceType.messageTimeout) { [weak self] in
+                    self?.checkMessageTimeout(id: messageID)
+                }
             }
         }
     }
