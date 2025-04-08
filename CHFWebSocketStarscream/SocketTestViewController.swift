@@ -62,6 +62,36 @@ class SocketTestViewController: UIViewController {
     }
     
     func startListeningToQuotation() {
+        WebSocketEventBus.shared.publisher(for: "realtime")
+            .sink { [weak self] receivedPayload in
+                // 在这里处理接收到的 "quotation" 事件的 payload
+                print("Received quotation payload: \(receivedPayload)")
+                self?.textView.text += "\n  \(receivedPayload)"
+                
+                // 你可以在这里根据 payload 的内容执行相应的操作
+                if let symbol = receivedPayload["symbol"] as? String,
+                   let price = receivedPayload["price"] as? Double {
+                    print("Symbol: \(symbol), Price: \(price)")
+                    // 更新你的 UI 或业务逻辑
+                }
+            }
+            .store(in: &cancellables)
+        
+        WebSocketEventBus.shared.publisher(for: "kline_1m")
+            .sink { [weak self] receivedPayload in
+                // 在这里处理接收到的 "quotation" 事件的 payload
+                print("Received quotation payload: \(receivedPayload)")
+                self?.textView.text += "\n  \(receivedPayload)"
+                
+                // 你可以在这里根据 payload 的内容执行相应的操作
+                if let symbol = receivedPayload["symbol"] as? String,
+                   let price = receivedPayload["price"] as? Double {
+                    print("Symbol: \(symbol), Price: \(price)")
+                    // 更新你的 UI 或业务逻辑
+                }
+            }
+            .store(in: &cancellables)
+        
         WebSocketEventBus.shared.publisher(for: "trade")
             .sink { [weak self] receivedPayload in
                 // 在这里处理接收到的 "quotation" 事件的 payload

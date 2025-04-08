@@ -8,6 +8,7 @@
 import UIKit
 import Starscream
 import Combine
+import Network
 
 public class WebSocketService: WebSocketDelegate {
     private let identifier: String
@@ -21,6 +22,8 @@ public class WebSocketService: WebSocketDelegate {
     private var cancellables = Set<AnyCancellable>()
     /// 在连接未建立时临时保存订阅消息的一个队列
     private let webSocketSubscriptionQueue = WebSocketSubscriptionQueue()
+    /// 超时检测字典
+    private var pendingMessages: [String: (message: String, timestamp: TimeInterval)] = [:]
     /// 订阅的主题回调处理
     private let topicSubjects = [String: PassthroughSubject<[String: Any], Never>]().withLock()
     /// 连接状态
@@ -29,12 +32,17 @@ public class WebSocketService: WebSocketDelegate {
     
     private var isReconnecting = false
     
+    // 网络监听
+    private let pathMonitor = NWPathMonitor()
+    private let monitorQueue = DispatchQueue(label: "websocket.network.monitor")
+    
     /// 增加连接状态发布接口（Combine）方便 UI 或管理组件监听连接状态：
     public var connectionStatus = CurrentValueSubject<Bool, Never>(false)
 
     
     deinit {
         disconnect()
+        stopNetworkMonitor()
         chf_print(.info, "\(self) -- \(#function)")
     }
 
@@ -43,6 +51,7 @@ public class WebSocketService: WebSocketDelegate {
         self.url = webSocketServiceType.host
         self.webSocketServiceType = webSocketServiceType
         setupSocket()
+        startNetworkMonitor()
     }
 
     private func setupSocket() {
@@ -50,6 +59,23 @@ public class WebSocketService: WebSocketDelegate {
         socket = WebSocket(request: request)
         socket?.request.timeoutInterval = webSocketServiceType.requestTimeoutInterval
         socket?.delegate = self
+    }
+    
+    private func startNetworkMonitor() {
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard let self = self else { return }
+            if path.status == .satisfied && !self.isConnected {
+                chf_print(.info, "Network reachable, attempting reconnect...")
+                DispatchQueue.main.async {
+                    self.connect()
+                }
+            }
+        }
+        pathMonitor.start(queue: monitorQueue)
+    }
+
+    private func stopNetworkMonitor() {
+        pathMonitor.cancel()
     }
 
     func connect() {
@@ -76,6 +102,10 @@ public class WebSocketService: WebSocketDelegate {
         sendMessages(subscription, event)
     }
     
+    func cancelSubscriptionAll(_ event: String = "cancel") {
+        webSocketSubscriptionQueue.clear()
+    }
+    
     private func sendMessages(_ subscription: WebSocketSubscription, _ event: String) {
         guard let socket = socket else { return }
                 
@@ -94,8 +124,15 @@ public class WebSocketService: WebSocketDelegate {
         let validJsonObject = jsonObject.compactMapValues { $0 }
         
         if let message = dictionaryToJsonString(dictionary: validJsonObject) {
-            socket.write(string: message)
             chf_print(.info, "WebSocket send text: \(message)")
+            socket.write(string: message)
+            
+            // 启动超时检测
+            let messageID = subscription.topic
+            pendingMessages[messageID] = (message, Date().timeIntervalSince1970)
+            DispatchQueue.main.asyncAfter(deadline: .now() + self.webSocketServiceType.messageTimeout) { [weak self] in
+                self?.checkMessageTimeout(id: messageID)
+            }
         }
     }
     
@@ -210,6 +247,19 @@ extension WebSocketService {
         let heartbeatMessage = webSocketServiceType.heartbeatMessage
         socket?.write(string: heartbeatMessage)
 //        chf_print(.info, heartbeatMessage)
+    }
+}
+
+// MARK: - 启动超时检测
+extension WebSocketService {
+    private func checkMessageTimeout(id: String) {
+        guard let (msg, timestamp) = pendingMessages[id] else { return }
+        if Date().timeIntervalSince1970 - timestamp >= self.webSocketServiceType.messageTimeout {
+            chf_print(.warning, "Message \(id) timeout, resending...")
+            socket?.write(string: msg)
+            pendingMessages[id] = (msg, Date().timeIntervalSince1970)
+            checkMessageTimeout(id: id)
+        }
     }
 }
 

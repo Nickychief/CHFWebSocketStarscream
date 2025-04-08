@@ -50,4 +50,13 @@ enum WebSocketServiceType: String {
     var heartbeatMessage: String {
         return "{\"ping\": \(self.identity)--\(Int(Date().timeIntervalSince1970 * 1000))}"
     }
+    
+    var messageTimeout: TimeInterval {
+        switch self {
+        case .MarketService:
+            return 5
+        case.USStockOptions:
+            return 5
+        }
+    }
 }

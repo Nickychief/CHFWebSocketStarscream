@@ -59,6 +59,10 @@ public class WebSocketManager {
     func subscribe(to webSocketServiceType: WebSocketServiceType, subscription: WebSocketSubscription) {
         services[webSocketServiceType]?.sendSubscription(subscription)
     }
+    
+    func unsubscribeAll(to webSocketServiceType: WebSocketServiceType) {
+        services[webSocketServiceType]?.cancelSubscriptionAll()
+    }
 
     func unsubscribe(to webSocketServiceType: WebSocketServiceType, subscription: WebSocketSubscription) {
         services[webSocketServiceType]?.cancelSubscription(subscription)
