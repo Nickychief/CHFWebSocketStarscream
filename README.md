@@ -4,36 +4,40 @@
 ┌────────────────────────┐
 │   WebSocketService     │
 ├────────────────────────┤
-│ ✅ 多实例（按服务区分） │
+│ ✅ 多实例（按服务区分）    │
 │ ✅ 订阅 / 取消订阅       │
-│ ✅ 订阅暂存队列支持     │
-│ ✅ 自动重连（限次 + 延迟）│
-│ ✅ Combine 回调接口    │
-│ ✅ 独立心跳机制         │
-│ ✅ 消息去重 / 可扩展优先级 │
-│ ✅ 日志打印              │
+│ ✅ 订阅暂存队列支持       │
+│ ✅ 自动重连（限次 + 延迟） │
+│ ✅ Combine 回调接口      │
+│ ✅ 独立心跳机制           │
+│ ✅ 消息去重 / 可扩展优先级  │
+│ ✅ 日志打印              │    
+│ ✅ 网络状态监听自动重连    │
 └────────────────────────┘
 
 // 核心模块设计  
 
 WebSocketManager               // 管理多个服务连接 （通过WebSocketServiceType生成唯一标识）
- ├─ WebSocketServiceType
+ ├─ WebSocketServiceType       // WebSocket服务类型（通过 WebSocketServiceType 枚举）
  ├─ WebSocketService           // 单个 WebSocket 实例
-     ├─ SubscriptionQueue      // 缓存订阅消息
+     ├─ WebSocketSubscription  // 消息Model
+     ├─ WebSocketSubscriptionQueue // 缓存订阅消息
      ├─ HeartbeatScheduler     // 心跳管理（暂时移除，通过WebSocketServiceType配置）
      └─ WebSocketEventBus      // 事件统一派发（Rx / Combine）
 ```
 
 
 ✅ 功能清单汇总 	
-1.	支持多个域名、独立 WebSocket 实例管理 	
-2.	连接前订阅信息暂存、自动连接后重发 	
-3.	订阅 / 取消订阅的统一封装 	
+1.	支持多 WebSocket 服务类型（通过 WebSocketServiceType 枚举）每个服务可配置独立的 host、timeout、心跳间隔	
+2.	延迟订阅支持，连接前订阅信息暂存、自动连接后重发（丢包重传机制（确认+重发））	
+3.	订阅 / 取消订阅的统一封装
 4.	不同服务器响应结构统一处理 	
-5.	自动断线重连，支持指数回退重试 	
-6.	每个连接自定义心跳机制 	
+5.	自动重连机制（断开后重试，指数退避）	
+6.	每个连接自定义心跳机制（心跳机制（按服务间隔发送））	
 7.	支持 RxSwift / Combine 事件流 	
-8.	日志 & 调试接口封装
+8.	日志与调试功能（连接、订阅、接收、错误打印）
+9.      网络状态监听自动重连
+
 ---
 ---
 ---
