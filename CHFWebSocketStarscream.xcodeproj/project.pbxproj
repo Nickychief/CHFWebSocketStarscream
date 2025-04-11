@@ -8,10 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		854E79502DA38BA4001EE8BB /* Starscream in Frameworks */ = {isa = PBXBuildFile; productRef = 854E794F2DA38BA4001EE8BB /* Starscream */; };
+		854E79632DA8B5F8001EE8BB /* Package in Sources */ = {isa = PBXBuildFile; fileRef = 854E79622DA8B5F8001EE8BB /* Package */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		854E78FD2DA38B38001EE8BB /* CHFWebSocketStarscream.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CHFWebSocketStarscream.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		854E79622DA8B5F8001EE8BB /* Package */ = {isa = PBXFileReference; lastKnownFileType = text; path = Package; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -33,6 +35,11 @@
 			path = CHFWebSocketStarscream;
 			sourceTree = "<group>";
 		};
+		854E79872DA8B8C1001EE8BB /* Source */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Source;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -50,6 +57,8 @@
 		854E78F42DA38B38001EE8BB = {
 			isa = PBXGroup;
 			children = (
+				854E79872DA8B8C1001EE8BB /* Source */,
+				854E79622DA8B5F8001EE8BB /* Package */,
 				854E78FF2DA38B38001EE8BB /* CHFWebSocketStarscream */,
 				854E78FE2DA38B38001EE8BB /* Products */,
 			);
@@ -80,6 +89,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				854E78FF2DA38B38001EE8BB /* CHFWebSocketStarscream */,
+				854E79872DA8B8C1001EE8BB /* Source */,
 			);
 			name = CHFWebSocketStarscream;
 			packageProductDependencies = (
@@ -141,6 +151,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				854E79632DA8B5F8001EE8BB /* Package in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
